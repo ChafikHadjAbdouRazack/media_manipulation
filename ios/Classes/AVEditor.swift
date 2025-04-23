@@ -480,52 +480,55 @@ extension AVEditor {
         }
     }
 
-    private func addAudio(to videoURL: URL, audioURL: URL,audioStartSec: Double, completion: @escaping (Bool) -> Void) {
-        let mixComposition = AVMutableComposition()
+   private func addAudio(to videoURL: URL, audioURL: URL, audioStartSec: Double, completion: @escaping (Bool) -> Void) {
+    let mixComposition = AVMutableComposition()
 
-        let videoAsset = AVAsset(url: videoURL)
-        let audioAsset = AVAsset(url: audioURL)
+    let videoAsset = AVAsset(url: videoURL)
+    let audioAsset = AVAsset(url: audioURL)
 
-        guard
-            let videoTrack = videoAsset.tracks(withMediaType: .video).first,
-            let audioTrack = audioAsset.tracks(withMediaType: .audio).first
-        else {
-            completion(false)
-            return
-        }
+    guard
+        let videoTrack = videoAsset.tracks(withMediaType: .video).first,
+        let audioTrack = audioAsset.tracks(withMediaType: .audio).first
+    else {
+        completion(false)
+        return
+    }
 
-        let videoCompositionTrack = mixComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!
-        let audioCompositionTrack = mixComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!
+    let videoCompositionTrack = mixComposition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!
+    let audioCompositionTrack = mixComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!
 
-        do {
-            try videoCompositionTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: videoAsset.duration), of: videoTrack, at: .zero)
-            try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(start: CMTime(seconds: audioStartSec, preferredTimescale: 600), duration: videoAsset.duration), of: audioTrack, at: .zero)
-        } catch {
-            completion(false)
-            return
-        }
+    do {
+        // Use CMTimeMakeWithSeconds instead of CMTime(seconds:preferredTimescale:)
+        let audioStartTime = CMTimeMakeWithSeconds(audioStartSec, preferredTimescale: 600)
 
-        // Export final video with audio
-        let finalOutputURL = videoURL.deletingLastPathComponent().appendingPathComponent("final_with_audio.mp4")
-        if FileManager.default.fileExists(atPath: finalOutputURL.path) {
-            try? FileManager.default.removeItem(at: finalOutputURL)
-        }
+        try videoCompositionTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: videoAsset.duration), of: videoTrack, at: .zero)
+        try audioCompositionTrack.insertTimeRange(CMTimeRangeMake(start: audioStartTime, duration: videoAsset.duration), of: audioTrack, at: .zero)
+    } catch {
+        completion(false)
+        return
+    }
 
-        let exporter = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)!
-        exporter.outputURL = finalOutputURL
-        exporter.outputFileType = .mp4
-        exporter.exportAsynchronously {
-            DispatchQueue.main.async {
-                if exporter.status == .completed {
-                    try? FileManager.default.removeItem(at: videoURL) // remove temp video
-                    try? FileManager.default.moveItem(at: finalOutputURL, to: videoURL)
-                    completion(true)
-                } else {
-                    completion(false)
-                }
+    // Export final video with audio
+    let finalOutputURL = videoURL.deletingLastPathComponent().appendingPathComponent("final_with_audio.mp4")
+    if FileManager.default.fileExists(atPath: finalOutputURL.path) {
+        try? FileManager.default.removeItem(at: finalOutputURL)
+    }
+
+    let exporter = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality)!
+    exporter.outputURL = finalOutputURL
+    exporter.outputFileType = .mp4
+    exporter.exportAsynchronously {
+        DispatchQueue.main.async {
+            if exporter.status == .completed {
+                try? FileManager.default.removeItem(at: videoURL) // remove temp video
+                try? FileManager.default.moveItem(at: finalOutputURL, to: videoURL)
+                completion(true)
+            } else {
+                completion(false)
             }
         }
     }
+}
 }
 
 
