@@ -147,7 +147,7 @@ class AVEditor {
                 videoCompositionTrack?.preferredTransform = videoTrack.preferredTransform
 
                 // Load and insert audio track (always)
-                let newAudioTracks = try await audioAsset.loadTracks(withMediaType: .audio)
+                let newAudioTracks = try await audioAsset.tracks(withMediaType: .audio)
                 if let newAudioTrack = newAudioTracks.first {
                     let newAudioCompositionTrack = mixComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
                     try newAudioCompositionTrack?.insertTimeRange(CMTimeRange(start: .zero, duration: videoAsset.duration), of: newAudioTrack, at: .zero)
@@ -273,7 +273,7 @@ extension AVEditor {
         Task {
             do {
                 // ✅ Load video track asynchronously (iOS 16+)
-                let videoTracks = try await videoAsset.loadTracks(withMediaType: .video)
+                let videoTracks = try await videoAsset.tracks(withMediaType: .video)
                 guard let videoTrack = videoTracks.first else {
                     completion(false)
                     return
@@ -374,7 +374,7 @@ extension AVEditor {
         duration: CMTime,
         audioMixParams: inout [AVMutableAudioMixInputParameters]
     ) async throws {
-        let tracks = try await asset.loadTracks(withMediaType: .audio)
+        let tracks = try await asset.tracks(withMediaType: .audio)
         guard let track = tracks.first else { return }
 
         let compTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
