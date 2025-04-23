@@ -9,10 +9,10 @@ import SwiftUI
 import AVKit
 
 class AVEditor {
-    
+
     static var shared = AVEditor()
-    
-    
+
+
     func applyFilterToImage(imagePath: String, outputURL: URL, filterValues: [Double], completion: @escaping (_ status: Bool) -> Void) {
         try? FileManager.default.removeItem(at: outputURL)
         guard let image = UIImage(contentsOfFile: imagePath),
@@ -135,7 +135,7 @@ class AVEditor {
         Task {
             do {
                 // Load and insert video track
-                let videoTracks = try await videoAsset.loadTracks(withMediaType: .video)
+                let videoTracks = try await videoAsset.tracks(withMediaType: .video)
                 guard let videoTrack = videoTracks.first else {
                     completion(false)
                     return
